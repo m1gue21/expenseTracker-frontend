@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogIn } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { AuthLogo } from "@/components/ui/BrandLogo";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import { authApi, getErrorMessage } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
 
@@ -31,64 +34,62 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="glass-card p-8">
-      <div className="mb-8 text-center">
-        <h1 className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-3xl font-extrabold text-transparent">
-          ExpenseTrack
-        </h1>
-        <p className="mt-2 text-sm text-slate-400">
-          Corporate travel expense management
-        </p>
+      <div className="space-y-8">
+      <div className="flex justify-center lg:hidden">
+        <AuthLogo size="xl" />
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-300">Email</label>
-          <input
-            type="email"
-            required
-            className="input-dark"
-            placeholder="you@company.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-300">Password</label>
-          <input
-            type="password"
-            required
-            className="input-dark"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
+      <div className="space-y-2">
+        <h2 className="text-heading-sm font-semibold tracking-tight text-foreground">Welcome back</h2>
+        <p className="text-small text-foreground-muted">Sign in to your expenseTracker account</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <Input
+          label="Email"
+          type="email"
+          required
+          placeholder="you@company.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
+        />
+        <Input
+          label="Password"
+          type="password"
+          required
+          placeholder="••••••••"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
+        />
 
         {error && (
-          <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-300">
+          <div className="rounded-md border border-danger/20 bg-danger/5 px-4 py-3 text-small text-danger" role="alert">
             {error}
-          </p>
+          </div>
         )}
 
-        <button type="submit" disabled={loading} className="btn-primary w-full">
-          <LogIn size={16} />
-          {loading ? "Signing in..." : "Sign in"}
-        </button>
+        <Button type="submit" loading={loading} className="w-full" size="lg">
+          Sign in
+          <ArrowRight className="h-4 w-4" />
+        </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-slate-400">
+      <p className="text-center text-small text-foreground-muted">
         No account?{" "}
-        <Link href="/register" className="font-medium text-primary hover:underline">
+        <Link href="/register" className="font-medium text-primary-500 transition-colors hover:text-primary-400">
           Create one
         </Link>
       </p>
 
-      <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.03] p-3 text-xs text-slate-500">
-        <p className="mb-1 font-semibold text-slate-400">Demo credentials</p>
-        <p>admin@expensetrack.com / admin123</p>
-        <p>manager@expensetrack.com / manager123</p>
-        <p>employee@expensetrack.com / employee123</p>
+      <div className="rounded-xl border border-[var(--border-subtle)] bg-muted/30 p-4">
+        <p className="mb-2 text-caption font-medium uppercase tracking-wider text-foreground-muted">Demo access</p>
+        <div className="space-y-1 text-caption text-foreground-secondary">
+          <p>admin@expensetrack.com · admin123</p>
+          <p>manager@expensetrack.com · manager123</p>
+          <p>employee@expensetrack.com · employee123</p>
+        </div>
       </div>
     </div>
   );

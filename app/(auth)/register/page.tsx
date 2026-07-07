@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { UserPlus } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { AuthLogo } from "@/components/ui/BrandLogo";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import { authApi, getErrorMessage } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
 
@@ -37,49 +40,39 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="glass-card p-8">
-      <div className="mb-8 text-center">
-        <h1 className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-3xl font-extrabold text-transparent">
-          Create account
-        </h1>
-        <p className="mt-2 text-sm text-slate-400">Join ExpenseTrack as an employee</p>
+      <div className="space-y-8">
+      <div className="flex justify-center lg:hidden">
+        <AuthLogo size="xl" />
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-300">First name</label>
-            <input required className="input-dark" placeholder="Jane" value={form.firstName} onChange={update("firstName")} />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-300">Last name</label>
-            <input required className="input-dark" placeholder="Doe" value={form.lastName} onChange={update("lastName")} />
-          </div>
+      <div className="space-y-2">
+        <h2 className="text-heading-sm font-semibold tracking-tight text-foreground">Create your account</h2>
+        <p className="text-small text-foreground-muted">Start managing expenses in minutes</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="grid grid-cols-2 gap-4">
+          <Input label="First name" required placeholder="Jane" value={form.firstName} onChange={update("firstName")} />
+          <Input label="Last name" required placeholder="Doe" value={form.lastName} onChange={update("lastName")} />
         </div>
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-300">Email</label>
-          <input type="email" required className="input-dark" placeholder="you@company.com" value={form.email} onChange={update("email")} />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-300">Password</label>
-          <input type="password" required className="input-dark" placeholder="Min. 6 characters" value={form.password} onChange={update("password")} />
-        </div>
+        <Input label="Email" type="email" required placeholder="you@company.com" value={form.email} onChange={update("email")} autoComplete="email" />
+        <Input label="Password" type="password" required placeholder="Min. 6 characters" value={form.password} onChange={update("password")} autoComplete="new-password" />
 
         {error && (
-          <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm text-red-300">
+          <div className="rounded-md border border-danger/20 bg-danger/5 px-4 py-3 text-small text-danger" role="alert">
             {error}
-          </p>
+          </div>
         )}
 
-        <button type="submit" disabled={loading} className="btn-primary w-full">
-          <UserPlus size={16} />
-          {loading ? "Creating account..." : "Create account"}
-        </button>
+        <Button type="submit" loading={loading} className="w-full" size="lg">
+          Create account
+          <ArrowRight className="h-4 w-4" />
+        </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-slate-400">
-        Already registered?{" "}
-        <Link href="/login" className="font-medium text-primary hover:underline">
+      <p className="text-center text-small text-foreground-muted">
+        Already have an account?{" "}
+        <Link href="/login" className="font-medium text-primary-500 transition-colors hover:text-primary-400">
           Sign in
         </Link>
       </p>

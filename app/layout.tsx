@@ -1,23 +1,28 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { ThemeProvider } from "@/lib/theme-provider";
 import "./globals.css";
 
-// next/font descarga Inter en build time y la sirve self-hosted (sin FOUT)
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "ExpenseTrack — Corporate Travel Expenses",
+  title: "expenseTracker — Corporate Expense Management",
   description:
-    "Plataforma de gestión de gastos corporativos de viaje. Portafolio para Arago Consulting.",
+    "Modern corporate travel expense management. Premium SaaS experience for financial control.",
+  icons: { icon: "/logo.png", apple: "/logo.png" },
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased app-gradient`}>
-        {children}
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.variable} font-sans`}>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

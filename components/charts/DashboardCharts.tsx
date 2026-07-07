@@ -1,92 +1,138 @@
 "use client";
 
 import {
-  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import type { DashboardStats } from "@/types";
 import { categoryLabels } from "@/components/ui/CategoryIcon";
 import { formatMonth } from "@/lib/format";
+import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 
-const AXIS = "#64748b";
-const GRID = "rgba(148,163,184,0.1)";
+const PRIMARY = "#10B981";
+const GRID = "var(--border-subtle)";
+const AXIS = "var(--text-muted)";
 
-const tooltipStyle = {
-  backgroundColor: "#0d1930",
-  border: "1px solid rgba(148,163,184,0.2)",
-  borderRadius: "12px",
-  color: "#f1f5f9",
-};
-
-export function CategoryBarChart({ stats }: { stats: DashboardStats }) {
-  const data = Object.entries(stats.expensesByCategory).map(([category, total]) => ({
-    name: categoryLabels[category as keyof typeof categoryLabels],
-    total,
-  }));
-
+function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number; name?: string }[]; label?: string }) {
+  if (!active || !payload?.length) return null;
   return (
-    <ResponsiveContainer width="100%" height={260}>
-      <BarChart data={data}>
-        <XAxis dataKey="name" stroke={AXIS} fontSize={12} tickLine={false} axisLine={{ stroke: GRID }} />
-        <YAxis stroke={AXIS} fontSize={12} tickLine={false} axisLine={{ stroke: GRID }} />
-        <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(59,130,246,0.06)" }} />
-        <Bar dataKey="total" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
+    <div className="rounded-lg border border-[var(--border)] bg-card px-3 py-2 shadow-md">
+      <p className="text-caption text-foreground-muted">{label}</p>
+      <p className="text-small font-semibold text-foreground">
+        €{Number(payload[0].value).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+      </p>
+    </div>
   );
 }
 
-export function MonthlyLineChart({ stats }: { stats: DashboardStats }) {
+export function MainChart({ stats }: { stats: DashboardStats }) {
   const data = stats.expensesByMonth.map((m) => ({
     name: formatMonth(m.month),
     total: m.total,
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={260}>
-      <LineChart data={data}>
-        <XAxis dataKey="name" stroke={AXIS} fontSize={12} tickLine={false} axisLine={{ stroke: GRID }} />
-        <YAxis stroke={AXIS} fontSize={12} tickLine={false} axisLine={{ stroke: GRID }} />
-        <Tooltip contentStyle={tooltipStyle} />
-        <Line
-          type="monotone"
-          dataKey="total"
-          stroke="#06b6d4"
-          strokeWidth={2.5}
-          dot={{ fill: "#06b6d4", r: 4 }}
-          activeDot={{ r: 6 }}
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <Card padding="md" className="col-span-full xl:col-span-2">
+      <CardHeader>
+        <div>
+          <CardTitle>Spending overview</CardTitle>
+          <p className="mt-1 text-caption text-foreground-muted">Monthly approved expenses — last 6 months</p>
+        </div>
+      </CardHeader>
+      <ResponsiveContainer width="100%" height={280}>
+        <AreaChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+          <defs>
+            <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={PRIMARY} stopOpacity={0.2} />
+              <stop offset="100%" stopColor={PRIMARY} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid stroke={GRID} strokeDasharray="3 3" vertical={false} />
+          <XAxis dataKey="name" stroke={AXIS} fontSize={12} tickLine={false} axisLine={false} dy={8} />
+          <YAxis stroke={AXIS} fontSize={12} tickLine={false} axisLine={false} dx={-4} />
+          <Tooltip content={<ChartTooltip />} />
+          <Area
+            type="monotone"
+            dataKey="total"
+            stroke={PRIMARY}
+            strokeWidth={2}
+            fill="url(#areaGrad)"
+            dot={false}
+            activeDot={{ r: 4, fill: PRIMARY, stroke: "var(--bg-card)", strokeWidth: 2 }}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </Card>
   );
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  Draft: "#64748b",
-  Submitted: "#eab308",
-  Approved: "#10b981",
-  Rejected: "#ef4444",
-};
+export function CategoryChart({ stats }: { stats: DashboardStats }) {
+  const data = Object.entries(stats.expensesByCategory)
+    .map(([category, total]) => ({
+      name: categoryLabels[category as keyof typeof categoryLabels],
+      total,
+    }))
+    .filter((d) => d.total > 0);
 
-export function StatusPieChart({ stats }: { stats: DashboardStats }) {
+  return (
+    <Card padding="md">
+      <CardHeader>
+        <CardTitle>By category</CardTitle>
+      </CardHeader>
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={data} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+          <CartesianGrid stroke={GRID} strokeDasharray="3 3" vertical={false} />
+          <XAxis dataKey="name" stroke={AXIS} fontSize={11} tickLine={false} axisLine={false} dy={8} />
+          <YAxis stroke={AXIS} fontSize={11} tickLine={false} axisLine={false} />
+          <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(16,185,129,0.04)" }} />
+          <Bar dataKey="total" fill={PRIMARY} radius={[6, 6, 0, 0]} maxBarSize={48} />
+        </BarChart>
+      </ResponsiveContainer>
+    </Card>
+  );
+}
+
+const STATUS_COLORS = ["#71717A", "#F59E0B", "#22C55E", "#EF4444"];
+
+export function StatusChart({ stats }: { stats: DashboardStats }) {
   const data = [
     { name: "Draft", value: stats.draftReports },
-    { name: "Submitted", value: stats.pendingReports },
+    { name: "Pending", value: stats.pendingReports },
     { name: "Approved", value: stats.approvedReports },
     { name: "Rejected", value: stats.rejectedReports },
   ].filter((d) => d.value > 0);
 
   return (
-    <ResponsiveContainer width="100%" height={260}>
-      <PieChart>
-        <Pie data={data} dataKey="value" nameKey="name" innerRadius={60} outerRadius={90} paddingAngle={3}>
-          {data.map((entry) => (
-            <Cell key={entry.name} fill={STATUS_COLORS[entry.name]} stroke="transparent" />
-          ))}
-        </Pie>
-        <Tooltip contentStyle={tooltipStyle} />
-        <Legend wrapperStyle={{ fontSize: 12, color: "#94a3b8" }} />
-      </PieChart>
-    </ResponsiveContainer>
+    <Card padding="md">
+      <CardHeader>
+        <CardTitle>Report status</CardTitle>
+      </CardHeader>
+      <ResponsiveContainer width="100%" height={220}>
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={56}
+            outerRadius={80}
+            paddingAngle={3}
+            strokeWidth={0}
+          >
+            {data.map((_, i) => (
+              <Cell key={i} fill={STATUS_COLORS[i % STATUS_COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip content={<ChartTooltip />} />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="mt-2 flex flex-wrap justify-center gap-4">
+        {data.map((d, i) => (
+          <div key={d.name} className="flex items-center gap-1.5 text-caption text-foreground-muted">
+            <span className="h-2 w-2 rounded-full" style={{ background: STATUS_COLORS[i] }} />
+            {d.name} ({d.value})
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }

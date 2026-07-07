@@ -24,7 +24,7 @@ export default function CategoryIcon({
   return (
     <span className="inline-flex items-center gap-1.5">
       <span aria-hidden>{icons[category]}</span>
-      {withLabel && <span className="text-sm text-slate-300">{categoryLabels[category]}</span>}
+      {withLabel && <span className="text-small text-foreground-secondary">{categoryLabels[category]}</span>}
     </span>
   );
 }

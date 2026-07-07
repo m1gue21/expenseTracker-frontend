@@ -2,14 +2,16 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import {
-  ArrowLeft, Send, Trash2, Check, X, Plus, CircleDot,
-} from "lucide-react";
-import StatusBadge from "@/components/ui/StatusBadge";
-import CategoryIcon from "@/components/ui/CategoryIcon";
+import { ArrowLeft, Send, Trash2, Check, X, Plus, Circle } from "lucide-react";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import { StatusBadge } from "@/components/ui/Badge";
+import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import CategoryIcon, { categoryLabels } from "@/components/ui/CategoryIcon";
 import { reportsApi, expensesApi, getErrorMessage } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
 import { formatDate, formatMoney } from "@/lib/format";
+import { cn } from "@/lib/cn";
 import type { ExpenseCategory, ExpenseReport } from "@/types";
 
 const emptyExpense = {
@@ -40,22 +42,22 @@ export default function ReportDetailPage() {
     }
   }, [id]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   if (error) {
     return (
-      <div className="glass-card p-8 text-center">
-        <p className="text-red-400">{error}</p>
-        <button onClick={() => router.push("/reports")} className="btn-ghost mt-4">
-          <ArrowLeft size={16} /> Back to reports
-        </button>
-      </div>
+      <Card padding="lg" className="text-center">
+        <p className="text-danger">{error}</p>
+        <Button variant="ghost" className="mt-4" onClick={() => router.push("/reports")}>
+          <ArrowLeft className="h-4 w-4" /> Back
+        </Button>
+      </Card>
     );
   }
 
-  if (!report) return <p className="animate-pulse text-slate-400">Loading report...</p>;
+  if (!report) {
+    return <div className="animate-pulse space-y-4"><div className="h-32 rounded-xl bg-muted" /><div className="h-64 rounded-xl bg-muted" /></div>;
+  }
 
   const isOwner = user?.id === report.user.id;
   const isManager = user?.role === "MANAGER" || user?.role === "ADMIN";
@@ -90,224 +92,153 @@ export default function ReportDetailPage() {
     });
   };
 
-  // Timeline sencillo derivado de los datos del reporte
   const timeline = [
-    { label: "Report created", date: report.createdAt, active: true },
-    { label: "Submitted for review", date: report.submittedAt, active: !!report.submittedAt },
+    { label: "Report created", date: report.createdAt, done: true },
+    { label: "Submitted for review", date: report.submittedAt, done: !!report.submittedAt },
     {
-      label:
-        report.status === "APPROVED"
-          ? "Approved"
-          : report.status === "REJECTED"
-            ? "Rejected"
-            : "Pending decision",
+      label: report.status === "APPROVED" ? "Approved" : report.status === "REJECTED" ? "Rejected" : "Awaiting decision",
       date: null,
-      active: report.status === "APPROVED" || report.status === "REJECTED",
+      done: report.status === "APPROVED" || report.status === "REJECTED",
     },
   ];
 
   return (
-    <div className="space-y-6">
-      <button onClick={() => router.push("/reports")} className="btn-ghost">
-        <ArrowLeft size={16} /> Back
-      </button>
+    <div className="space-y-8 animate-fade-in">
+      <Button variant="ghost" size="sm" onClick={() => router.push("/reports")}>
+        <ArrowLeft className="h-4 w-4" strokeWidth={1.75} /> Back to reports
+      </Button>
 
       {/* Header */}
-      <div className="glass-card p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-foreground">{report.title}</h1>
+      <Card padding="md">
+        <div className="flex flex-wrap items-start justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-heading-sm font-semibold tracking-tight text-foreground">{report.title}</h1>
               <StatusBadge status={report.status} />
             </div>
-            <p className="mt-2 text-sm text-slate-400">{report.description || "No description"}</p>
-            <p className="mt-2 text-xs text-slate-500">
-              By {report.user.firstName} {report.user.lastName} · {formatDate(report.createdAt)}
+            <p className="max-w-xl text-small text-foreground-secondary">{report.description || "No description"}</p>
+            <p className="text-caption text-foreground-muted">
+              {report.user.firstName} {report.user.lastName} · {formatDate(report.createdAt)}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-slate-400">Total amount</p>
-            <p className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-3xl font-extrabold text-transparent">
-              {formatMoney(report.totalAmount)}
-            </p>
+            <p className="text-caption text-foreground-muted">Total amount</p>
+            <p className="text-heading-md font-semibold tracking-tight text-primary-500">{formatMoney(report.totalAmount)}</p>
           </div>
         </div>
 
-        {/* Acciones según rol y estado */}
-        <div className="mt-5 flex flex-wrap gap-3">
+        <div className="mt-6 flex flex-wrap gap-3">
           {canEdit && (
             <>
-              <button
-                disabled={busy || report.expenses.length === 0}
-                onClick={() => run(() => reportsApi.submit(report.id))}
-                className="btn-primary"
-                title={report.expenses.length === 0 ? "Add at least one expense first" : ""}
-              >
-                <Send size={16} /> Submit for review
-              </button>
-              <button
-                disabled={busy}
-                onClick={() => run(() => reportsApi.remove(report.id), true)}
-                className="btn-ghost !border-red-500/30 !text-red-400 hover:!bg-red-500/10"
-              >
-                <Trash2 size={16} /> Delete
-              </button>
+              <Button disabled={busy || report.expenses.length === 0} onClick={() => run(() => reportsApi.submit(report.id))}>
+                <Send className="h-4 w-4" strokeWidth={1.75} /> Submit
+              </Button>
+              <Button variant="danger" disabled={busy} onClick={() => run(() => reportsApi.remove(report.id), true)}>
+                <Trash2 className="h-4 w-4" strokeWidth={1.75} /> Delete
+              </Button>
             </>
           )}
           {canReview && (
             <>
-              <button
-                disabled={busy}
-                onClick={() => run(() => reportsApi.approve(report.id))}
-                className="btn-primary !from-emerald-500 !to-emerald-600"
-              >
-                <Check size={16} /> Approve
-              </button>
-              <button
-                disabled={busy}
-                onClick={() => run(() => reportsApi.reject(report.id))}
-                className="btn-ghost !border-red-500/30 !text-red-400 hover:!bg-red-500/10"
-              >
-                <X size={16} /> Reject
-              </button>
+              <Button variant="success" disabled={busy} onClick={() => run(() => reportsApi.approve(report.id))}>
+                <Check className="h-4 w-4" strokeWidth={1.75} /> Approve
+              </Button>
+              <Button variant="danger" disabled={busy} onClick={() => run(() => reportsApi.reject(report.id))}>
+                <X className="h-4 w-4" strokeWidth={1.75} /> Reject
+              </Button>
             </>
           )}
         </div>
-        {actionError && <p className="mt-3 text-sm text-red-400">{actionError}</p>}
-      </div>
+        {actionError && <p className="mt-3 text-small text-danger">{actionError}</p>}
+      </Card>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Lista de gastos */}
         <div className="space-y-4 lg:col-span-2">
-          <div className="glass-card overflow-hidden">
-            <div className="border-b border-white/5 px-5 py-4">
-              <h2 className="text-sm font-semibold text-slate-300">
-                Expenses ({report.expenses.length})
-              </h2>
+          <Card padding="none" className="overflow-hidden">
+            <div className="border-b border-[var(--border-subtle)] px-6 py-4">
+              <CardTitle>Expenses ({report.expenses.length})</CardTitle>
             </div>
             {report.expenses.length === 0 ? (
-              <p className="px-5 py-8 text-center text-sm text-slate-500">
-                No expenses yet. Add your first one below.
-              </p>
+              <p className="px-6 py-12 text-center text-small text-foreground-muted">No expenses yet</p>
             ) : (
-              <ul className="divide-y divide-white/5">
+              <ul className="divide-y divide-[var(--border-subtle)]">
                 {report.expenses.map((expense) => (
-                  <li key={expense.id} className="flex items-center justify-between gap-4 px-5 py-4">
+                  <li key={expense.id} className="flex items-center justify-between gap-4 px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.04] text-lg">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
                         <CategoryIcon category={expense.category} />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-foreground">{expense.title}</p>
-                        <p className="text-xs text-slate-500">
-                          {formatDate(expense.expenseDate)}
-                          {expense.notes ? ` · ${expense.notes}` : ""}
+                        <p className="text-small font-medium text-foreground">{expense.title}</p>
+                        <p className="text-caption text-foreground-muted">
+                          {categoryLabels[expense.category]} · {formatDate(expense.expenseDate)}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-semibold text-slate-200">
-                        {formatMoney(expense.amount)}
-                      </span>
+                      <span className="text-small font-semibold text-foreground">{formatMoney(expense.amount)}</span>
                       {canEdit && (
-                        <button
-                          disabled={busy}
-                          onClick={() => run(() => expensesApi.remove(expense.id))}
-                          className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-red-500/10 hover:text-red-400"
-                          aria-label="Delete expense"
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                        <Button variant="ghost" size="icon" disabled={busy} onClick={() => run(() => expensesApi.remove(expense.id))} aria-label="Delete expense">
+                          <Trash2 className="h-4 w-4 text-danger" strokeWidth={1.75} />
+                        </Button>
                       )}
                     </div>
                   </li>
                 ))}
               </ul>
             )}
-          </div>
+          </Card>
 
-          {/* Formulario inline para agregar gasto */}
           {canEdit && (
-            <form onSubmit={handleAddExpense} className="glass-card space-y-4 p-5">
-              <h2 className="text-sm font-semibold text-slate-300">Add expense</h2>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <input
-                  required
-                  className="input-dark"
-                  placeholder="Expense title"
-                  value={expenseForm.title}
-                  onChange={(e) => setExpenseForm({ ...expenseForm, title: e.target.value })}
-                />
-                <input
-                  required
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  className="input-dark"
-                  placeholder="Amount (€)"
-                  value={expenseForm.amount}
-                  onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
-                />
-                <select
-                  className="input-dark"
-                  value={expenseForm.category}
-                  onChange={(e) =>
-                    setExpenseForm({ ...expenseForm, category: e.target.value as ExpenseCategory })
-                  }
-                >
-                  <option value="TRANSPORT">✈️ Transport</option>
-                  <option value="ACCOMMODATION">🏨 Accommodation</option>
-                  <option value="MEALS">🍽️ Meals</option>
-                  <option value="OTHER">📦 Other</option>
-                </select>
-                <input
-                  required
-                  type="date"
-                  className="input-dark"
-                  value={expenseForm.expenseDate}
-                  onChange={(e) => setExpenseForm({ ...expenseForm, expenseDate: e.target.value })}
-                />
-              </div>
-              <input
-                className="input-dark"
-                placeholder="Notes (optional)"
-                value={expenseForm.notes}
-                onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })}
-              />
-              <button type="submit" disabled={busy} className="btn-primary">
-                <Plus size={16} /> Add expense
-              </button>
-            </form>
+            <Card padding="md">
+              <CardHeader><CardTitle>Add expense</CardTitle></CardHeader>
+              <form onSubmit={handleAddExpense} className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Input required placeholder="Expense title" value={expenseForm.title} onChange={(e) => setExpenseForm({ ...expenseForm, title: e.target.value })} />
+                  <Input required type="number" step="0.01" min="0.01" placeholder="Amount (€)" value={expenseForm.amount} onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })} />
+                  <select
+                    className="h-10 rounded-md border border-[var(--border)] bg-[var(--input-bg)] px-3 text-small text-foreground focus:border-primary-500 focus:shadow-glow focus:outline-none"
+                    value={expenseForm.category}
+                    onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value as ExpenseCategory })}
+                  >
+                    {(Object.keys(categoryLabels) as ExpenseCategory[]).map((c) => (
+                      <option key={c} value={c}>{categoryLabels[c]}</option>
+                    ))}
+                  </select>
+                  <Input required type="date" value={expenseForm.expenseDate} onChange={(e) => setExpenseForm({ ...expenseForm, expenseDate: e.target.value })} />
+                </div>
+                <Input placeholder="Notes (optional)" value={expenseForm.notes} onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })} />
+                <Button type="submit" disabled={busy}>
+                  <Plus className="h-4 w-4" strokeWidth={1.75} /> Add expense
+                </Button>
+              </form>
+            </Card>
           )}
         </div>
 
         {/* Timeline */}
-        <div className="glass-card h-fit p-5">
-          <h2 className="mb-4 text-sm font-semibold text-slate-300">Activity timeline</h2>
-          <ol className="space-y-5">
+        <Card padding="md" className="h-fit">
+          <CardHeader><CardTitle>Activity</CardTitle></CardHeader>
+          <ol className="space-y-0">
             {timeline.map((step, i) => (
-              <li key={i} className="flex gap-3">
+              <li key={i} className="flex gap-3 pb-6 last:pb-0">
                 <div className="flex flex-col items-center">
-                  <CircleDot
-                    size={18}
-                    className={step.active ? "text-secondary" : "text-slate-600"}
+                  <Circle
+                    className={cn("h-4 w-4", step.done ? "fill-primary-500 text-primary-500" : "text-foreground-muted")}
+                    strokeWidth={0}
                   />
                   {i < timeline.length - 1 && (
-                    <div className={`mt-1 h-8 w-px ${step.active ? "bg-secondary/40" : "bg-slate-700"}`} />
+                    <div className={cn("mt-1 w-px flex-1 min-h-[24px]", step.done ? "bg-primary-500/30" : "bg-[var(--border)]")} />
                   )}
                 </div>
-                <div>
-                  <p className={`text-sm ${step.active ? "text-foreground" : "text-slate-500"}`}>
-                    {step.label}
-                  </p>
-                  {step.date && (
-                    <p className="text-xs text-slate-500">{formatDate(step.date)}</p>
-                  )}
+                <div className="pt-0.5">
+                  <p className={cn("text-small font-medium", step.done ? "text-foreground" : "text-foreground-muted")}>{step.label}</p>
+                  {step.date && <p className="text-caption text-foreground-muted">{formatDate(step.date)}</p>}
                 </div>
               </li>
             ))}
           </ol>
-        </div>
+        </Card>
       </div>
     </div>
   );

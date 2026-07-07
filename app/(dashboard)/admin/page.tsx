@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Users, Wallet, Clock, CheckCircle2 } from "lucide-react";
-import StatCard from "@/components/ui/StatCard";
-import StatusBadge from "@/components/ui/StatusBadge";
+import MetricCard from "@/components/ui/MetricCard";
+import { StatusBadge } from "@/components/ui/Badge";
+import { Card, CardTitle } from "@/components/ui/Card";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 import { dashboardApi, reportsApi, usersApi } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
 import { formatDate, formatMoney } from "@/lib/format";
@@ -23,19 +25,12 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!user) return;
-    if (!isManager) {
-      router.replace("/dashboard");
-      return;
-    }
-    const load = async () => {
+    if (!isManager) { router.replace("/dashboard"); return; }
+    (async () => {
       try {
-        const [statsRes, reportsRes] = await Promise.all([
-          dashboardApi.stats(),
-          reportsApi.getAll(),
-        ]);
+        const [statsRes, reportsRes] = await Promise.all([dashboardApi.stats(), reportsApi.getAll()]);
         setStats(statsRes.data);
         setPending(reportsRes.data.filter((r) => r.status === "SUBMITTED"));
-        // GET /api/users es solo ADMIN; el MANAGER no lo llama
         if (isAdmin) {
           const usersRes = await usersApi.getAll();
           setUsers(usersRes.data);
@@ -43,47 +38,47 @@ export default function AdminPage() {
       } finally {
         setLoading(false);
       }
-    };
-    load();
+    })();
   }, [user, isManager, isAdmin, router]);
 
   if (!isManager || loading || !stats) {
-    return <p className="animate-pulse text-slate-400">Loading admin panel...</p>;
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-4 gap-4">{[...Array(4)].map((_, i) => <SkeletonCard key={i} />)}</div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Admin Panel</h1>
-        <p className="mt-1 text-sm text-slate-400">Global overview and pending approvals</p>
+        <h1 className="text-heading-sm font-semibold tracking-tight text-foreground">Admin</h1>
+        <p className="mt-1 text-small text-foreground-muted">Global overview and pending approvals</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Total Users" value={stats.totalUsers} icon={Users} accent="cyan" />
-        <StatCard title="Approved Spend" value={formatMoney(stats.totalExpenses)} icon={Wallet} accent="blue" />
-        <StatCard title="Pending Approval" value={stats.pendingReports} icon={Clock} accent="yellow" />
-        <StatCard title="Approved Reports" value={stats.approvedReports} icon={CheckCircle2} accent="green" />
+        <MetricCard title="Total users" value={stats.totalUsers} icon={Users} accent="secondary" />
+        <MetricCard title="Approved spend" value={formatMoney(stats.totalExpenses)} icon={Wallet} accent="primary" />
+        <MetricCard title="Pending approval" value={stats.pendingReports} icon={Clock} accent="warning" />
+        <MetricCard title="Approved reports" value={stats.approvedReports} icon={CheckCircle2} accent="success" />
       </div>
 
-      {/* Reportes pendientes de aprobación */}
-      <div className="glass-card overflow-hidden">
-        <div className="border-b border-white/5 px-5 py-4">
-          <h2 className="text-sm font-semibold text-slate-300">
-            Reports awaiting approval ({pending.length})
-          </h2>
+      <Card padding="none" className="overflow-hidden">
+        <div className="border-b border-[var(--border-subtle)] px-6 py-4">
+          <CardTitle>Awaiting approval ({pending.length})</CardTitle>
         </div>
         {pending.length === 0 ? (
-          <p className="px-5 py-8 text-center text-sm text-slate-500">Nothing to review 🎉</p>
+          <p className="px-6 py-12 text-center text-small text-foreground-muted">All caught up 🎉</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-small">
               <thead>
-                <tr className="text-xs uppercase tracking-wide text-slate-500">
-                  <th className="px-5 py-3">Title</th>
-                  <th className="px-5 py-3">Employee</th>
-                  <th className="px-5 py-3">Amount</th>
-                  <th className="px-5 py-3">Submitted</th>
-                  <th className="px-5 py-3">Status</th>
+                <tr className="border-b border-[var(--border-subtle)] text-caption uppercase tracking-wider text-foreground-muted">
+                  <th className="px-6 py-3 font-medium">Report</th>
+                  <th className="px-6 py-3 font-medium">Employee</th>
+                  <th className="px-6 py-3 font-medium">Amount</th>
+                  <th className="px-6 py-3 font-medium">Submitted</th>
+                  <th className="px-6 py-3 font-medium">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -91,60 +86,51 @@ export default function AdminPage() {
                   <tr
                     key={report.id}
                     onClick={() => router.push(`/reports/${report.id}`)}
-                    className="cursor-pointer border-t border-white/5 transition-colors hover:bg-white/[0.03]"
+                    className="cursor-pointer border-b border-[var(--border-subtle)] transition-colors last:border-0 hover:bg-muted/30"
                   >
-                    <td className="px-5 py-3.5 font-medium text-foreground">{report.title}</td>
-                    <td className="px-5 py-3.5 text-slate-400">
-                      {report.user.firstName} {report.user.lastName}
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-300">{formatMoney(report.totalAmount)}</td>
-                    <td className="px-5 py-3.5 text-slate-400">
-                      {report.submittedAt ? formatDate(report.submittedAt) : "—"}
-                    </td>
-                    <td className="px-5 py-3.5"><StatusBadge status={report.status} /></td>
+                    <td className="px-6 py-4 font-medium text-foreground">{report.title}</td>
+                    <td className="px-6 py-4 text-foreground-secondary">{report.user.firstName} {report.user.lastName}</td>
+                    <td className="px-6 py-4 text-foreground">{formatMoney(report.totalAmount)}</td>
+                    <td className="px-6 py-4 text-foreground-muted">{report.submittedAt ? formatDate(report.submittedAt) : "—"}</td>
+                    <td className="px-6 py-4"><StatusBadge status={report.status} /></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-      </div>
+      </Card>
 
-      {/* Usuarios (solo ADMIN) */}
       {isAdmin && (
-        <div className="glass-card overflow-hidden">
-          <div className="border-b border-white/5 px-5 py-4">
-            <h2 className="text-sm font-semibold text-slate-300">All users ({users.length})</h2>
+        <Card padding="none" className="overflow-hidden">
+          <div className="border-b border-[var(--border-subtle)] px-6 py-4">
+            <CardTitle>All users ({users.length})</CardTitle>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-small">
               <thead>
-                <tr className="text-xs uppercase tracking-wide text-slate-500">
-                  <th className="px-5 py-3">Name</th>
-                  <th className="px-5 py-3">Email</th>
-                  <th className="px-5 py-3">Role</th>
-                  <th className="px-5 py-3">Joined</th>
+                <tr className="border-b border-[var(--border-subtle)] text-caption uppercase tracking-wider text-foreground-muted">
+                  <th className="px-6 py-3 font-medium">Name</th>
+                  <th className="px-6 py-3 font-medium">Email</th>
+                  <th className="px-6 py-3 font-medium">Role</th>
+                  <th className="px-6 py-3 font-medium">Joined</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((u) => (
-                  <tr key={u.id} className="border-t border-white/5">
-                    <td className="px-5 py-3.5 font-medium text-foreground">
-                      {u.firstName} {u.lastName}
+                  <tr key={u.id} className="border-b border-[var(--border-subtle)] last:border-0">
+                    <td className="px-6 py-4 font-medium text-foreground">{u.firstName} {u.lastName}</td>
+                    <td className="px-6 py-4 text-foreground-secondary">{u.email}</td>
+                    <td className="px-6 py-4">
+                      <span className="rounded-full bg-primary-500/10 px-2.5 py-0.5 text-caption font-medium text-primary-500">{u.role}</span>
                     </td>
-                    <td className="px-5 py-3.5 text-slate-400">{u.email}</td>
-                    <td className="px-5 py-3.5">
-                      <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                        {u.role}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-400">{formatDate(u.createdAt)}</td>
+                    <td className="px-6 py-4 text-foreground-muted">{formatDate(u.createdAt)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );
