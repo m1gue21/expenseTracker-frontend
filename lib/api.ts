@@ -1,5 +1,12 @@
 import axios from "axios";
 import { useAuthStore } from "./store";
+import {
+  mockAuthApi,
+  mockDashboardApi,
+  mockExpensesApi,
+  mockReportsApi,
+  mockUsersApi,
+} from "./mock/mock_client";
 import type {
   AuthResponse,
   DashboardStats,
@@ -9,8 +16,10 @@ import type {
   User,
 } from "@/types";
 
+export const MOCK_MODE = process.env.NEXT_PUBLIC_MOCK_MODE === "true";
+
 export const api = axios.create({
-  baseURL: "http://localhost:8080",
+  baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080",
   headers: { "Content-Type": "application/json" },
 });
 
@@ -43,24 +52,27 @@ export function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     return error.response?.data?.error ?? error.message;
   }
+  if (error instanceof Error) {
+    return error.message;
+  }
   return "Unexpected error";
 }
 
-// --- Funciones tipadas por dominio ---
+// --- Implementación real (backend) ---
 
-export const authApi = {
+const realAuthApi = {
   login: (email: string, password: string) =>
     api.post<AuthResponse>("/api/auth/login", { email, password }),
   register: (data: { email: string; password: string; firstName: string; lastName: string }) =>
     api.post<AuthResponse>("/api/auth/register", data),
 };
 
-export const usersApi = {
+const realUsersApi = {
   me: () => api.get<User>("/api/users/me"),
   getAll: () => api.get<User[]>("/api/users"),
 };
 
-export const reportsApi = {
+const realReportsApi = {
   create: (data: { title: string; description: string }) =>
     api.post<ExpenseReport>("/api/reports", data),
   getMine: () => api.get<ExpenseReport[]>("/api/reports/my"),
@@ -72,13 +84,21 @@ export const reportsApi = {
   remove: (id: number) => api.delete(`/api/reports/${id}`),
 };
 
-export const expensesApi = {
+const realExpensesApi = {
   add: (reportId: number, data: ExpenseInput) =>
     api.post<Expense>(`/api/reports/${reportId}/expenses`, data),
   update: (id: number, data: ExpenseInput) => api.put<Expense>(`/api/expenses/${id}`, data),
   remove: (id: number) => api.delete(`/api/expenses/${id}`),
 };
 
-export const dashboardApi = {
+const realDashboardApi = {
   stats: () => api.get<DashboardStats>("/api/dashboard/stats"),
 };
+
+// --- API pública: mock o real según NEXT_PUBLIC_MOCK_MODE ---
+
+export const authApi = MOCK_MODE ? mockAuthApi : realAuthApi;
+export const usersApi = MOCK_MODE ? mockUsersApi : realUsersApi;
+export const reportsApi = MOCK_MODE ? mockReportsApi : realReportsApi;
+export const expensesApi = MOCK_MODE ? mockExpensesApi : realExpensesApi;
+export const dashboardApi = MOCK_MODE ? mockDashboardApi : realDashboardApi;
