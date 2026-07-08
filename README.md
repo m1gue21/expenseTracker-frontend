@@ -7,6 +7,9 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-06B6D4?logo=tailwindcss&logoColor=white)
 
+## 🚀 Live Demo
+[expensetrack-demo.vercel.app](https://expensetrack-demo.vercel.app)
+
 ## Related repos
 
 - [expenseTracker-backend](https://github.com/m1gue21/expenseTracker-backend) — Kotlin/Spring Boot API
